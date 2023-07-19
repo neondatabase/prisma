@@ -30,6 +30,7 @@ import {
   Fetch,
   LibraryEngine,
   Options,
+  ServerlessEngine,
 } from './core/engines'
 import { prettyPrintArguments } from './core/errorRendering/prettyPrintArguments'
 import { $extends } from './core/extensions/$extends'
@@ -78,7 +79,7 @@ const debug = Debug('prisma:client')
 declare global {
   // eslint-disable-next-line no-var
   var NODE_CLIENT: true
-  const TARGET_ENGINE_TYPE: 'binary' | 'library' | 'data-proxy'
+  const TARGET_ENGINE_TYPE: 'binary' | 'library' | 'data-proxy' | 'neon-serverless'
 }
 
 // used by esbuild for tree-shaking
@@ -182,8 +183,8 @@ export type LogDefinition = {
 
 export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition
   ? T['emit'] extends 'event'
-    ? T['level']
-    : never
+  ? T['level']
+  : never
   : never
 export type GetEvents<T extends Array<LogLevel | LogDefinition>> =
   | GetLogType<T[0]>
@@ -469,7 +470,7 @@ export function getPrismaClient(config: GetPrismaClientConfig) {
 
     getEngine(): Engine {
       if (this._dataProxy === true && TARGET_ENGINE_TYPE === 'data-proxy') {
-        return new DataProxyEngine(this._engineConfig)
+        return new ServerlessEngine(this._engineConfig)
       } else if (this._clientEngineType === ClientEngineType.Library && TARGET_ENGINE_TYPE === 'library') {
         return new LibraryEngine(this._engineConfig)
       } else if (this._clientEngineType === ClientEngineType.Binary && TARGET_ENGINE_TYPE === 'binary') {
@@ -767,7 +768,7 @@ Or read our docs at https://www.prisma.io/docs/concepts/components/prisma-client
         await this._engine.transaction('commit', headers, info)
       } catch (e: any) {
         // it went bad, then we rollback the transaction
-        await this._engine.transaction('rollback', headers, info).catch(() => {})
+        await this._engine.transaction('rollback', headers, info).catch(() => { })
 
         throw e // silent rollback, throw original error
       }

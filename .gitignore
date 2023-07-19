@@ -36,6 +36,7 @@ esm
 reproductions/*
 !reproductions/basic-sqlite
 !reproductions/tracing
+!reproductions/neon-serverless-orm
 !reproductions/pnpm-workspace.yaml
 
 dev.db

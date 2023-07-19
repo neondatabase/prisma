@@ -46,7 +46,7 @@ const edgeRuntimeBuildConfig: BuildOptions = {
   entryPoints: ['src/runtime/index.ts'],
   outfile: 'runtime/edge',
   bundle: true,
-  minify: true,
+  minify: false,
   sourcemap: 'linked',
   legalComments: 'none',
   emitTypes: false,

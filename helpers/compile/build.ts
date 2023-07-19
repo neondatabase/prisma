@@ -14,6 +14,7 @@ import { depCheckPlugin } from './plugins/depCheckPlugin'
 import { fixImportsPlugin } from './plugins/fixImportsPlugin'
 import { onErrorPlugin } from './plugins/onErrorPlugin'
 import { tscPlugin } from './plugins/tscPlugin'
+import { wasmPlugin } from './plugins/wasmPlugin'
 
 export type BuildResult = esbuild.BuildResult
 export type BuildOptions = esbuild.BuildOptions & {
@@ -48,6 +49,9 @@ const applyCjsDefaults = (options: BuildOptions): BuildOptions => ({
   // outfile has precedence over outdir, hence these ternaries
   outfile: options.outfile ? getOutFile(options) : undefined,
   outdir: options.outfile ? undefined : getOutDir(options),
+  loader: {
+    '.wasm': 'binary',
+  },
   plugins: [...(options.plugins ?? []), fixImportsPlugin, tscPlugin(options.emitTypes), onErrorPlugin],
 })
 
