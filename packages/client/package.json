@@ -153,7 +153,11 @@
     }
   },
   "dependencies": {
-    "@prisma/engines-version": "5.1.0-8.b182127de581d0bf6ec89152a6e2fb4652be0f0a"
+    "@neondatabase/serverless": "^0.5.6",
+    "@prisma/engines-version": "5.1.0-8.b182127de581d0bf6ec89152a6e2fb4652be0f0a",
+    "pg-native": "^3.0.1",
+    "web-streams-polyfill": "^3.2.1",
+    "ws": "^8.13.0"
   },
   "sideEffects": false
 }

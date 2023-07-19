@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { PrismaClient } from './.prisma/client/edge'
+import { PrismaClient } from './.prisma/client'
 
 async function main() {
   const prisma = new PrismaClient()
@@ -10,6 +10,10 @@ async function main() {
       email: email,
     },
   })
+
+  let res = await prisma.user.findMany()
+  console.log("findMany Result:")
+  console.log(res)
 }
 
 void main()
