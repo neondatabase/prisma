@@ -25,12 +25,23 @@ import init from './connector-wasm'
 import * as connector from './connector-wasm'
 import wasm from './connector-wasm/connector_wasm_bg.wasm'
 
+import { Closeable, ColumnType, Library, Query, Queryable, ResultSet } from './engines/types/Library'
+import { Driver } from './connector-wasm/connector_wasm'
+
+import ws from 'ws';
+import { Client, neonConfig } from '@neondatabase/serverless'
+neonConfig.webSocketConstructor = ws
+
 const MAX_RETRIES = 3
 
 // to defer the execution of promises in the constructor
 const P = Promise.resolve()
 
 const debug = Debug('prisma:client:serverlessEngine')
+
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export class ServerlessEngine extends Engine<undefined> {
     private inlineSchema: string
@@ -43,6 +54,7 @@ export class ServerlessEngine extends Engine<undefined> {
     private clientVersion: string
     private tracingHelper: TracingHelper
     private _isInitialized: boolean
+    private _client: Client
 
     constructor(config: EngineConfig) {
         super()
@@ -56,6 +68,8 @@ export class ServerlessEngine extends Engine<undefined> {
         this.logEmitter = config.logEmitter
         this.tracingHelper = this.config.tracingHelper
         this._isInitialized = false
+
+        this._client = new Client({ connectionString: this.env.DATABASE_URL! })
         console.log("initialized")
     }
 
@@ -66,8 +80,44 @@ export class ServerlessEngine extends Engine<undefined> {
     async start() {
         if (!this._isInitialized) {
             await init(wasm)
-            await connector.start(this.inlineSchema)
-            console.log("engine initialized")
+            await this._client.connect()
+            const driver = new Driver(
+                async (params: Query): Promise<ResultSet> => {
+                    console.log('[nodejs] calling queryRaw + 0', params)
+                    const { rows, fields } = await this._client.query(params.sql, params.args)
+                    const columns = fields.map(field => field.name)
+                    const resultSet: ResultSet = {
+                        columnNames: columns,
+                        columnTypes: fields.map(field => {
+                            switch (field.dataTypeID) {
+                                case 25:
+                                    return ColumnType.Text;
+                                case 1114:
+                                    return ColumnType.DateTime;
+                                case 1700:
+                                    return ColumnType.Numeric;
+                                case 23:
+                                    return ColumnType.Int64;
+                                default:
+                                    throw Error("unsupported column type")
+                            }
+                        }),
+                        rows: rows.map(row => columns.map(column => row[column]))
+                    };
+                    console.log('[nodejs] resultSet', resultSet)
+
+                    return resultSet
+                },
+
+                async (params: Query): Promise<number> => {
+                    console.log('[nodejs] calling executeRaw', params)
+                    await delay(100)
+
+                    const affectedRows = 32
+                    return affectedRows
+                })
+            await connector.start(this.inlineSchema, driver)
+            console.log("using neondatabase/serverless engine")
             this._isInitialized = true
         }
     }
@@ -80,10 +130,9 @@ export class ServerlessEngine extends Engine<undefined> {
 
     async request<T>(query: JsonQuery, options: RequestOptions<undefined>): Promise<QueryEngineResult<T>> {
         await this.start()
-        console.log("SQL:")
-        await connector.to_sql(JSON.stringify(query))
-        console.log("--- not implemented ---")
-        throw new Error("Method not implemented: request.")
+        console.log("new request")
+        const data = JSON.parse(await connector.execute(JSON.stringify(query)))
+        return { data, elapsed: 0 }
     }
 
     async requestBatch<T>(queries: JsonQuery[], options: RequestBatchOptions<undefined>): Promise<BatchQueryEngineResult<T>[]> {

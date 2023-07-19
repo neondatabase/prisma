@@ -39,7 +39,7 @@ const loader = (cache: LoadCache) => (module: string) => {
     absWorkingDir: modulePath,
     mainFields: ['browser', 'main'],
     bundle: true,
-    minify: true,
+    minify: false,
   })
 
   return (cache[module] = outfile)
@@ -168,6 +168,7 @@ const fillPlugin = (
       util: { path: load('util') },
       // vm: { path: load('vm-browserify') },
       // zlib: { path: load('browserify-zlib') },
+      // stream: { path: load('stream') },
 
       // disabled
       constants: { contents: '' },
@@ -179,7 +180,6 @@ const fillPlugin = (
       os: { contents: '' },
       punycode: { contents: '' },
       querystring: { contents: '' },
-      stream: { contents: '' },
       string_decoder: { contents: '' },
       sys: { contents: '' },
       timers: { contents: '' },

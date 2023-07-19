@@ -17,7 +17,7 @@ function nodeRuntimeBuildConfig(targetEngineType: 'binary' | 'library' | 'data-p
     entryPoints: ['src/runtime/index.ts'],
     outfile: `runtime/${targetEngineType}`,
     bundle: true,
-    minify: true,
+    minify: false,
     sourcemap: 'linked',
     emitTypes: targetEngineType === 'library',
     define: {
